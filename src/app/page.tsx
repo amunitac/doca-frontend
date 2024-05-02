@@ -1,113 +1,228 @@
-import Image from 'next/image';
+'use client';
+import React, { useState } from 'react';
+
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+}
+
+interface Order {
+  productId: number;
+  quantity: number;
+}
+
+interface Account {
+  id: number;
+  name: string;
+  orders: Order[];
+}
 
 export default function Home() {
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+    null,
+  );
+  const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
+  const [accounts, setAccounts] = useState<Account[]>([
+    {
+      id: 1,
+      name: 'Table 1',
+      orders: [
+        { productId: 101, quantity: 3 },
+        { productId: 102, quantity: 2 },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Table 2',
+      orders: [
+        { productId: 201, quantity: 1 },
+        { productId: 202, quantity: 1 },
+        { productId: 203, quantity: 1 },
+      ],
+    },
+    // Otros objetos de cuenta...
+  ]);
+
+  const products: Product[] = [
+    { id: 101, name: 'Coffee', price: 2.5 },
+    { id: 102, name: 'Sandwich', price: 5 },
+    { id: 201, name: 'Tea', price: 2 },
+    { id: 202, name: 'Cake', price: 3 },
+    { id: 203, name: 'Salad', price: 7 },
+    // Otros productos...
+  ];
+
+  const handleAddProduct = (accountId: number) => {
+    if (selectedProductId !== null) {
+      const accountIndex = accounts.findIndex(
+        (account) => account.id === accountId,
+      );
+      if (accountIndex !== -1) {
+        const newAccounts = [...accounts];
+        const existingOrderIndex = newAccounts[accountIndex].orders.findIndex(
+          (order) => order.productId === selectedProductId,
+        );
+        if (existingOrderIndex !== -1) {
+          newAccounts[accountIndex].orders[existingOrderIndex].quantity +=
+            selectedProductQuantity;
+        } else {
+          newAccounts[accountIndex].orders.push({
+            productId: selectedProductId,
+            quantity: selectedProductQuantity,
+          });
+        }
+        setAccounts(newAccounts);
+        setSelectedProductId(null);
+        setSelectedProductQuantity(1);
+      }
+    }
+  };
+
+  const handleRemoveProduct = (
+    accountId: number,
+    productId: number,
+    quantityToRemove: number,
+  ) => {
+    const accountIndex = accounts.findIndex(
+      (account) => account.id === accountId,
+    );
+    if (accountIndex !== -1) {
+      const newAccounts = [...accounts];
+      const orderIndex = newAccounts[accountIndex].orders.findIndex(
+        (order) => order.productId === productId,
+      );
+      if (orderIndex !== -1) {
+        if (
+          quantityToRemove >=
+          newAccounts[accountIndex].orders[orderIndex].quantity
+        ) {
+          // If quantity to remove is greater or equal to the current quantity, remove the entire order
+          newAccounts[accountIndex].orders.splice(orderIndex, 1);
+        } else {
+          // Otherwise, subtract the specified quantity from the current quantity
+          newAccounts[accountIndex].orders[orderIndex].quantity -=
+            quantityToRemove;
+        }
+        setAccounts(newAccounts);
+      }
+    }
+  };
+
+  const handleCloseAccount = (accountId: number) => {
+    const updatedAccounts = accounts.filter(
+      (account) => account.id !== accountId,
+    );
+    setAccounts(updatedAccounts);
+  };
+
+  const handleOpenNewTable = () => {
+    const newTableId = accounts.length + 1;
+    setAccounts([
+      ...accounts,
+      { id: newTableId, name: `Table ${newTableId}`, orders: [] },
+    ]);
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Open Tables</h1>
+      <button
+        onClick={handleOpenNewTable}
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4"
+      >
+        Open New Table
+      </button>
+      {accounts.map((account) => (
+        <div key={account.id} className="mb-4">
+          <h2 className="text-lg font-semibold">{account.name}</h2>
+          <div className="mb-2">
+            <select
+              value={selectedProductId ?? ''}
+              onChange={(e) => setSelectedProductId(parseInt(e.target.value))}
+              className="mr-2 px-2 py-1 border rounded"
+            >
+              <option value="">Select Product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name} (${product.price})
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={selectedProductQuantity}
+              onChange={(e) =>
+                setSelectedProductQuantity(parseInt(e.target.value))
+              }
+              min="1"
+              className="px-2 py-1 border rounded"
             />
-          </a>
+            <button
+              onClick={() => handleAddProduct(account.id)}
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded ml-2"
+            >
+              Add Product
+            </button>
+            <button
+              onClick={() => handleCloseAccount(account.id)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2"
+            >
+              Close Table
+            </button>
+          </div>
+          <table className="w-full border-collapse border">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border">Product</th>
+                <th className="border">Price</th>
+                <th className="border">Quantity</th>
+                <th className="border"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {account.orders.map((order) => {
+                const product = products.find(
+                  (product) => product.id === order.productId,
+                );
+                return (
+                  <tr key={order.productId} className="bg-white">
+                    <td className="border">{product?.name}</td>
+                    <td className="border">${product?.price}</td>
+                    <td className="border">{order.quantity}</td>
+                    <td className="border">
+                      <div className="flex">
+                        <input
+                          type="number"
+                          min="1"
+                          max={order.quantity}
+                          defaultValue="1"
+                          className="px-2 py-1 border rounded mr-2 w-16"
+                          onChange={(e) =>
+                            setSelectedProductQuantity(parseInt(e.target.value))
+                          }
+                        />
+                        <button
+                          onClick={() =>
+                            handleRemoveProduct(
+                              account.id,
+                              order.productId,
+                              selectedProductQuantity,
+                            )
+                          }
+                          className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      ))}
+    </div>
   );
 }
