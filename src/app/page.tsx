@@ -1,14 +1,15 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   price: number;
 }
 
 interface Order {
-  productId: number;
+  productId: string;
   quantity: number;
 }
 
@@ -19,7 +20,7 @@ interface Account {
 }
 
 export default function Home() {
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null,
   );
   const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
@@ -28,30 +29,38 @@ export default function Home() {
       id: 1,
       name: 'Table 1',
       orders: [
-        { productId: 101, quantity: 3 },
-        { productId: 102, quantity: 2 },
+        { productId: 'CAF001', quantity: 3 },
+        { productId: 'PIZZ004', quantity: 2 },
       ],
     },
     {
       id: 2,
       name: 'Table 2',
       orders: [
-        { productId: 201, quantity: 1 },
-        { productId: 202, quantity: 1 },
-        { productId: 203, quantity: 1 },
+        { productId: 'CAF003', quantity: 1 },
+        { productId: 'PIZZ001', quantity: 1 },
+        { productId: 'LAT005', quantity: 1 },
       ],
     },
     // Otros objetos de cuenta...
   ]);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const products: Product[] = [
-    { id: 101, name: 'Coffee', price: 2.5 },
-    { id: 102, name: 'Sandwich', price: 5 },
-    { id: 201, name: 'Tea', price: 2 },
-    { id: 202, name: 'Cake', price: 3 },
-    { id: 203, name: 'Salad', price: 7 },
-    // Otros productos...
-  ];
+  // Fetch products from the server
+  useEffect(() => {
+    axios
+      .get(
+        'https://script.google.com/macros/s/AKfycbx8pgvpLBRI_GU1X2tNxkqD_JzyuX4lAcv84VlKh31lfihcBpklR7kljsjOV-HMwMfs/exec',
+      )
+      .then((response) => {
+        const productsList: Product[] = response.data.map((product: any) => ({
+          id: product['CODIGO'],
+          name: product['PRODUCTO'],
+          price: product['PRECIO VENTA'],
+        }));
+        setProducts(productsList);
+      });
+  }, []);
 
   const handleAddProduct = (accountId: number) => {
     if (selectedProductId !== null) {
@@ -81,7 +90,7 @@ export default function Home() {
 
   const handleRemoveProduct = (
     accountId: number,
-    productId: number,
+    productId: string,
     quantityToRemove: number,
   ) => {
     const accountIndex = accounts.findIndex(
@@ -139,7 +148,7 @@ export default function Home() {
           <div className="mb-2">
             <select
               value={selectedProductId ?? ''}
-              onChange={(e) => setSelectedProductId(parseInt(e.target.value))}
+              onChange={(e) => setSelectedProductId(e.target.value)}
               className="mr-2 px-2 py-1 border rounded"
             >
               <option value="">Select Product</option>
