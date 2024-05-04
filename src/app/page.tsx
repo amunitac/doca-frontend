@@ -24,26 +24,7 @@ export default function Home() {
     null,
   );
   const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
-  const [accounts, setAccounts] = useState<Account[]>([
-    {
-      id: 1,
-      name: 'Table 1',
-      orders: [
-        { productId: 'CAF001', quantity: 3 },
-        { productId: 'PIZZ004', quantity: 2 },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Table 2',
-      orders: [
-        { productId: 'CAF003', quantity: 1 },
-        { productId: 'PIZZ001', quantity: 1 },
-        { productId: 'LAT005', quantity: 1 },
-      ],
-    },
-    // Otros objetos de cuenta...
-  ]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
 
   // Fetch products from the server
@@ -59,6 +40,22 @@ export default function Home() {
           price: product['PRECIO VENTA'],
         }));
         setProducts(productsList);
+      });
+  }, []);
+
+  // Fetch accounts from the server
+  useEffect(() => {
+    axios
+      .get(
+        'https://script.google.com/macros/s/AKfycbyH2R2W-cyXvWWQbNOK1fPdlqhbUiracR9i8FNA0A2lwoO1cf2Hni0zgWQWheq62tY/exec',
+      )
+      .then((response) => {
+        const accountsList: Account[] = response.data.map((account: any) => ({
+          id: account['id'],
+          name: account['name'],
+          orders: account['orders'],
+        }));
+        setAccounts(accountsList);
       });
   }, []);
 
